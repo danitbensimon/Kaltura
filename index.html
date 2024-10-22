@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kaltura Dart Game</title>
+    <style>
+        /* ... (keeping all existing styles) ... */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            cursor: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 90vw;
+            height: 90vh;
+            background-color: #6F2C91;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #header {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        #header h1 {
+            margin-bottom: 5px;
+            color: #F9D56B;
+            font-size: 24px;
+        }
+
+        #header p {
+            font-size: 16px;
+            line-height: 1.2;
+            margin-bottom: 5px;
+        }
+
+        #engagement-icons {
+            font-size: 24px;
+            margin: 5px 0;
+        }
+
+        #non-engagement-icons {
+            font-size: 24px;
+            margin: 5px 0;
+            color: #ff9999;
+        }
+
+        #tv-screen {
+            flex-grow: 1;
+            background-color: #000;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #timer-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 10px;
+            background-color: #A3D99A;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        #score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-size: 24px;
+            z-index: 100;
+        }
+
+        #timer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: 24px;
+            z-index: 100;
+        }
+
+        .target {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: transform 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px !important;
+            cursor: none;
+        }
+
+        #crosshair {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+        }
+
+        #win-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(111, 44, 145, 0.95);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        #restart-button {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #0072B8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .button {
+            background-color: #0072B8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .button:hover {
+            background-color: #005a94;
+        }
+
+        @keyframes hit {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .target {
+            animation: float 2s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <h1>Kaltura Engagement Elements Game</h1>
+            <p>Hit only the engagement elements! Each hit is worth 100 points. Reach 1000 points to win Kaltura swag!</p>
+            <div id="engagement-icons">
+                Engagement icons: 👋 👆 ▶️ 💬 📱 📢 👏
+            </div>
+            <div id="non-engagement-icons">
+                Non-engagement icons: 🐘 🦒 🍎 🍌 🏰 🏠 🌳 🎪
+            </div>
+            <p>Hit any non-engagement icon and the game ends immediately.</p>
+        </div>
+        <div id="tv-screen">
+            <div id="timer-bar"></div>
+            <div id="score">Score: 0</div>
+            <div id="timer">30.0s</div>
+            <button id="restart-button">Play Again</button>
+        </div>
+        <div id="crosshair">
+            <svg width="30" height="30" viewBox="0 0 30 30">
+                <circle cx="15" cy="15" r="13" stroke="#FF6F30" stroke-width="2" fill="none"/>
+                <circle cx="15" cy="15" r="2" fill="#FF6F30"/>
+            </svg>
+        </div>
+        <div id="game-over">
+            <h2 id="game-over-title">Game Over!</h2>
+            <p id="game-over-message"></p>
+        </div>
+        <div id="win-message" style="display: none;">
+            <h2>🎉 Congratulations! 🎉</h2>
+            <p>You've won Kaltura swag by reaching 1000 points!</p>
+            <p>Keep playing to improve your score!</p>
+        </div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const tvScreen = document.getElementById('tv-screen');
+        const crosshair = document.getElementById('crosshair');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const timerBar = document.getElementById('timer-bar');
+        const gameOverScreen = document.getElementById('game-over');
+        const restartButton = document.getElementById('restart-button');
+        const winMessage = document.getElementById('win-message');
+        
+        let score = 0;
+        let timeLeft = 30;
+        let gameActive = false;
+        let targets = [];
+        let gameLoop;
+        let targetInterval;
+        let lastInteractionTime = Date.now();
+        let hasShownWinMessage = false;
+
+        const engagementEmojis = ['👋', '👆', '▶️', '💬', '📱', '📢', '👏'];
+        const nonEngagementEmojis = ['🐘', '🦒', '🍎', '🍌', '🏰', '🏠', '🌳', '🎪'];
+
+        function updateCursor(e) {
+            const rect = gameContainer.getBoundingClientRect();
+            crosshair.style.left = (e.clientX - 15) + 'px';
+            crosshair.style.top = (e.clientY - 15) + 'px';
+        }
+
+        function isSpaceOccupied(x, y, width, height) {
+            for (const target of targets) {
+                const targetRect = target.getBoundingClientRect();
+                if (
+                    x < targetRect.right + 40 &&
+                    x + width > targetRect.left - 40 &&
+                    y < targetRect.bottom + 40 &&
+                    y + height > targetRect.top - 40
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function createTarget() {
+            const target = document.createElement('div');
+            target.className = 'target';
+            
+            const isEngagement = Math.random() < 0.7;
+            const emoji = isEngagement 
+                ? engagementEmojis[Math.floor(Math.random() * engagementEmojis.length)]
+                : nonEngagementEmojis[Math.floor(Math.random() * nonEngagementEmojis.length)];
+            
+            target.textContent = emoji;
+            target.isEngagement = isEngagement;
+            target.isHit = false; // Add this flag to track if target has been hit
+            
+            const rect = tvScreen.getBoundingClientRect();
+            let x, y;
+            let attempts = 0;
+            const maxAttempts = 50;
+
+            do {
+                x = Math.random() * (rect.width - 100);
+                y = Math.random() * (rect.height - 100);
+                attempts++;
+            } while (isSpaceOccupied(x, y, 80, 80) && attempts < maxAttempts);
+
+            if (attempts < maxAttempts) {
+                target.style.left = x + 'px';
+                target.style.top = y + 'px';
+                
+                target.addEventListener('click', () => handleTargetClick(target));
+                
+                tvScreen.appendChild(target);
+                targets.push(target);
+                
+                setTimeout(() => {
+                    if (targets.includes(target)) {
+                        tvScreen.removeChild(target);
+                        targets = targets.filter(t => t !== target);
+                    }
+                }, 2000);
+            }
+        }
+
+        function handleTargetClick(target) {
+            if (!gameActive || target.isHit) return; // Check if target was already hit
+            
+            lastInteractionTime = Date.now();
+            
+            if (target.isEngagement) {
+                score += 100; // Always add 100 points for hitting an engagement icon
+                target.isHit = true; // Mark the target as hit
+                scoreDisplay.textContent = `Score: ${score}`;
+                
+                if (score >= 1000 && !hasShownWinMessage) {
+                    hasShownWinMessage = true;
+                    winMessage.style.display = 'block';
+                    setTimeout(() => {
+                        winMessage.style.display = 'none';
+                    }, 3000);
+                }
+                
+                target.style.animation = 'hit 0.3s ease-out forwards';
+                setTimeout(() => {
+                    if (targets.includes(target)) {
+                        tvScreen.removeChild(target);
+                        targets = targets.filter(t => t !== target);
+                    }
+                }, 300);
+            } else {
+                endGame('You hit a non-engagement element!');
+            }
+        }
+
+        function updateTimer() {
+            if (!gameActive) return;
+            
+            timeLeft = Math.max(0, timeLeft - 0.1);
+            timerDisplay.textContent = timeLeft.toFixed(1) + 's';
+            timerBar.style.width = (timeLeft / 30 * 100) + '%';
+            
+            if (timeLeft <= 0) {
+                endGame('Time\'s up!');
+            }
+        }
+
+        function endGame(message) {
+            gameActive = false;
+            clearInterval(gameLoop);
+            clearInterval(targetInterval);
+            
+            document.getElementById('game-over-title').textContent = 'Game Over!';
+            document.getElementById('game-over-message').textContent = 
+                `${message}\nFinal Score: ${score}${score >= 1000 ? '\nCongratulations on winning Kaltura swag!' : ''}`;
+            
+            gameOverScreen.style.display = 'block';
+            restartButton.style.display = 'block';
+            winMessage.style.display = 'none';
+            
+            targets.forEach(target => tvScreen.removeChild(target));
+            targets = [];
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            gameActive = true;
+            lastInteractionTime = Date.now();
+            hasShownWinMessage = false;
+            
+            scoreDisplay.textContent = 'Score: 0';
+            timerBar.style.width = '100%';
+            gameOverScreen.style.display = 'none';
+            restartButton.style.display = 'none';
+            winMessage.style.display = 'none';
+            
+            targets.forEach(target => tvScreen.removeChild(target));
+            targets = [];
+            
+            gameLoop = setInterval(updateTimer, 100);
+            targetInterval = setInterval(() => {
+                if (targets.length < 8) {
+                    createTarget();
+                }
+            }, 500);
+        }
+
+        // Event Listeners
+        document.addEventListener('mousemove', updateCursor);
+        gameContainer.addEventListener('click', (e) => {
+            if (e.target === tvScreen || e.target === gameContainer) {
+                lastInteractionTime = Date.now();
+            }
+        });
+        restartButton.addEventListener('click', startGame);
+        
+        // Start game when page loads
+        window.onload = startGame;
+    </script>
+</body>
+</html>
